@@ -2,9 +2,10 @@
  * GamingStoreGUI.java
  * Gaming Store Online Shopping System - CS3700 Final Project
  *
- * Main Swing window for the store. This version wires up the
- * Add to Cart and Remove from Cart buttons. Checkout is stubbed
- * out and gets its full payment logic in the next step.
+ * Main Swing window for the store. Displays the product catalog
+ * in a table, shows the current cart contents on the right, and
+ * provides buttons to add items, remove items, and check out
+ * with a chosen payment method.
  */
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -127,9 +128,57 @@ public class GamingStoreGUI extends JFrame {
         refreshCart();
     }
 
-    // Placeholder until the payment flow is added in the next step
+    // Runs the checkout flow: pick a payment method,
+    // process the order, and show the receipt
     private void checkout() {
-        JOptionPane.showMessageDialog(this, "Checkout coming soon.");
+        if (cart.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Your cart is empty.");
+            return;
+        }
+
+        // Let the user pick which Payment implementation to use
+        String[] options = {"Credit Card", "PayPal", "Gift Card"};
+        String choice = (String) JOptionPane.showInputDialog(
+                this, "Choose a payment method:", "Checkout",
+                JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+
+        if (choice == null) {
+            return;                             // User cancelled the dialog
+        }
+
+        // Polymorphism: one Payment variable can hold any of the three types
+        Payment payment;
+        switch (choice) {
+            case "PayPal":
+                payment = new PayPalPayment(customer.getEmail());
+                break;
+            case "Gift Card":
+                payment = new GiftCardPayment("GC-2026", 100.00);
+                break;
+            default:
+                payment = new CreditCardPayment(customer.getName(),
+                        "4532111122223333");
+                break;
+        }
+
+        Order order = new Order(customer, cart, payment);
+
+        // process() runs whichever processPayment() the chosen type defines
+        if (order.process()) {
+            // Payment succeeded: reduce stock, clear the cart, show receipt
+            for (CartItem item : cart.getItems()) {
+                item.getProduct().reduceStock(item.getQuantity());
+            }
+            cart.clear();
+            refreshProductTable();
+            refreshCart();
+            JOptionPane.showMessageDialog(this, order.getReceipt(),
+                    "Order Complete", JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(this,
+                    "Payment was declined. Please try another method.",
+                    "Payment Failed", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     // ---------- Display refresh helpers ----------
