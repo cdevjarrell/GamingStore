@@ -2,9 +2,9 @@
  * GamingStoreGUI.java
  * Gaming Store Online Shopping System - CS3700 Final Project
  *
- * Main Swing window for the store. This first version builds the
- * window layout: the product catalog table in the center and the
- * shopping cart panel on the right. Buttons come next.
+ * Main Swing window for the store. This version wires up the
+ * Add to Cart and Remove from Cart buttons. Checkout is stubbed
+ * out and gets its full payment logic in the next step.
  */
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -36,6 +36,7 @@ public class GamingStoreGUI extends JFrame {
 
         add(buildProductPanel(), BorderLayout.CENTER);
         add(buildCartPanel(), BorderLayout.EAST);
+        add(buildButtonPanel(), BorderLayout.SOUTH);
     }
 
     // ---------- Panel builders ----------
@@ -70,6 +71,65 @@ public class GamingStoreGUI extends JFrame {
         totalLabel = new JLabel("Total: $0.00");
         panel.add(totalLabel, BorderLayout.SOUTH);
         return panel;
+    }
+
+    // Action buttons along the bottom of the window
+    private JPanel buildButtonPanel() {
+        JPanel panel = new JPanel();
+
+        JButton addButton = new JButton("Add to Cart");
+        addButton.addActionListener(e -> addSelectedToCart());
+
+        JButton removeButton = new JButton("Remove from Cart");
+        removeButton.addActionListener(e -> removeSelectedFromCart());
+
+        JButton checkoutButton = new JButton("Checkout");
+        checkoutButton.addActionListener(e -> checkout());
+
+        panel.add(addButton);
+        panel.add(removeButton);
+        panel.add(checkoutButton);
+        return panel;
+    }
+
+    // ---------- Button actions ----------
+
+    // Adds the selected catalog row to the cart if stock allows it
+    private void addSelectedToCart() {
+        int row = productTable.getSelectedRow();
+        if (row == -1) {
+            JOptionPane.showMessageDialog(this, "Select a product first.");
+            return;
+        }
+
+        Product product = catalog.get(row);
+        int inCart = cart.getQuantity(product.getId());
+
+        // Block the add if the cart already holds all remaining stock
+        if (!product.isInStock(inCart + 1)) {
+            JOptionPane.showMessageDialog(this,
+                    "Not enough stock for " + product.getName() + ".");
+            return;
+        }
+
+        cart.addProduct(product, 1);
+        refreshCart();
+    }
+
+    // Removes the selected product from the cart entirely
+    private void removeSelectedFromCart() {
+        int row = productTable.getSelectedRow();
+        if (row == -1) {
+            JOptionPane.showMessageDialog(this, "Select a product first.");
+            return;
+        }
+        cart.removeProduct(catalog.get(row).getId());
+        refreshCart();
+    }
+
+    // Placeholder until the payment flow is added in the next step
+    private void checkout() {
+        JOptionPane.showMessageDialog(this, "Checkout coming soon.");
     }
 
     // ---------- Display refresh helpers ----------
